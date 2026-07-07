@@ -1,16 +1,16 @@
-   const express = require('express');
-   const app = express();
-   const PORT = process.env.PORT || 3000;
 
-   // Middleware para lidar com JSON (opcional, se você for usar JSON)
-   app.use(express.json());
+const express = require('express');
+const app = express();
+const PORT = process.env.PORT || 3000;
 
-   // Rota simples para testar
-   app.get('/api/test', (req, res) => {
-       res.json({ message: 'Servidor funcionando!' });
-   });
+// Middleware
+app.use(express.json());
 
-   // Iniciar o servidor
-   app.listen(PORT, () => {
-       console.log(`Servidor rodando na porta ${PORT}`);
-   });
+// Importar rotas
+const adminRoutes = require('../routes/adminRoutes'); // Ajustado para o caminho correto
+app.use('/api', adminRoutes);
+
+// Iniciar o servidor
+app.listen(PORT, () => {
+    console.log(`Servidor rodando na porta ${PORT}`);
+});
