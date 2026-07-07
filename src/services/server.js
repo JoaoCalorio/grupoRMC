@@ -1,16 +1,16 @@
-const express = require('express');
-const path = require('path');
-const usuarioRoutes = require('./routes/usuarioRoutes');
+   const express = require('express');
+   const app = express();
+   const PORT = process.env.PORT || 3000;
 
+   // Middleware para lidar com JSON (opcional, se você for usar JSON)
+   app.use(express.json());
 
-const app = express();
-const PORT = process.env.PORT || 3000;
+   // Rota simples para testar
+   app.get('/api/test', (req, res) => {
+       res.json({ message: 'Servidor funcionando!' });
+   });
 
-app.use(express.urlencoded({ extended: true }));
-app.use(express.static(path.join(__dirname, '../public')));
-app.use(express.json());
-app.use('/api/usuarios', usuarioRoutes);
-
-app.listen(PORT, () => {
-  console.log(`Servidor rodando em http://localhost:${PORT}`);
-});
+   // Iniciar o servidor
+   app.listen(PORT, () => {
+       console.log(`Servidor rodando na porta ${PORT}`);
+   });
