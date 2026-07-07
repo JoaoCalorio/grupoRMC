@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Agendamento de Visita — Rádio</title>
+  <link rel="stylesheet" href="agendamento.css" />
+  <link rel="stylesheet" href="validation.css" />
+</head>
+<body>
+
+  <!-- Header -->
+  <header class="header">
+    <div class="header-inner">
+      <div class="header-icon">
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path d="M3 9a1 1 0 0 1 1-1h16a1 1 0 0 1 1 1v11a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9zm3 2v7h4v-7H6zm5 0v7h4v-7h-4zm5 0v7h2v-7h-2zM6.5 7l7-5 1.5 1.5L8 7H6.5z"/>
+        </svg>
+      </div>
+      <div class="header-text">
+        <h1>Agendamento de Visita</h1>
+        <p>Acesso público &mdash; qualquer ouvinte pode agendar gratuitamente</p>
+      </div>
+    </div>
+  </header>
+
+  <!-- Step Indicator -->
+  <div class="steps-bar">
+    <div class="steps-bar-inner">
+      <div class="step-item active" id="step-1">
+        <div class="step-circle" id="step-circle-1">1</div>
+        <span class="step-label">Horário</span>
+      </div>
+      <div class="step-item" id="step-2">
+        <div class="step-circle" id="step-circle-2">2</div>
+        <span class="step-label">Responsável</span>
+      </div>
+      <div class="step-item" id="step-3">
+        <div class="step-circle" id="step-circle-3">3</div>
+        <span class="step-label">Integrantes</span>
+      </div>
+      <div class="step-item" id="step-4">
+        <div class="step-circle" id="step-circle-4">4</div>
+        <span class="step-label">Confirmação</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main -->
+  <main class="container">
+
+    <!-- Info Banner -->
+    <div class="info-banner">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      <p>
+        <strong>Atenção:</strong> Cada janela de 1 hora comporta no máximo <strong>5 pessoas</strong> no total.
+        O grupo deve caber inteiro na vaga — não há agendamento parcial.
+      </p>
+    </div>
+
+    <!-- ─── SECTION 1: Tamanho do grupo ─────────────────────────── -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-header-icon">
+          <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        </div>
+        <div>
+          <h2>Tamanho do Grupo</h2>
+          <p>Quantas pessoas irão visitar a rádio?</p>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="field">
+          <label>Número de integrantes <span class="required">*</span></label>
+          <div class="group-size-grid">
+            <button type="button" class="size-btn" onclick="selectSize(this, 1)">1</button>
+            <button type="button" class="size-btn" onclick="selectSize(this, 2)">2</button>
+            <button type="button" class="size-btn" onclick="selectSize(this, 3)">3</button>
+            <button type="button" class="size-btn" onclick="selectSize(this, 4)">4</button>
+            <button type="button" class="size-btn" onclick="selectSize(this, 5)">5</button>
+          </div>
+          <span class="field-info">Máximo de 5 pessoas por agendamento</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── SECTION 2: Dados do Responsável ─────────────────────── -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-header-icon">
+          <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        </div>
+        <div>
+          <h2>Dados do Responsável</h2>
+          <p>Pessoa responsável pelo grupo durante a visita</p>
+        </div>
+      </div>
+      <div class="card-body">
+
+        <!-- Dados Pessoais -->
+        <div class="subsection-label">Dados Pessoais</div>
+        <div class="form-grid">
+          <div class="field span-2">
+            <label for="resp-nome">Nome completo <span class="required">*</span></label>
+            <input type="text" id="resp-nome" placeholder="Ex: Maria Aparecida da Silva" autocomplete="name" />
+          </div>
+          <div class="field">
+            <label for="resp-cpf">CPF <span class="required">*</span></label>
+            <input type="text" id="resp-cpf" placeholder="000.000.000-00" maxlength="14" autocomplete="off" />
+          </div>
+          <div class="field">
+            <label for="resp-nascimento">Data de nascimento <span class="required">*</span></label>
+            <input type="date" id="resp-nascimento" />
+          </div>
+          <div class="field">
+            <label for="resp-email">E-mail <span class="required">*</span></label>
+            <input type="email" id="resp-email" placeholder="exemplo@email.com" autocomplete="email" />
+          </div>
+          <div class="field">
+            <label for="resp-telefone">Telefone / WhatsApp <span class="required">*</span></label>
+            <input type="tel" id="resp-telefone" placeholder="(00) 00000-0000" maxlength="15" autocomplete="tel" />
+          </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <!-- Como ficou sabendo -->
+        <div class="subsection-label">Como ficou sabendo</div>
+        <div class="field">
+          <label for="resp-sabendo">Como você ficou sabendo sobre as visitas? <span class="required">*</span></label>
+          <select id="resp-sabendo">
+            <option value="" disabled selected>Selecione uma opção</option>
+            <option value="radio">Ouviu na rádio</option>
+            <option value="redes">Redes sociais</option>
+            <option value="indicacao">Indicação de amigo ou familiar</option>
+            <option value="outro">Outro</option>
+          </select>
+        </div>
+
+        <div class="divider"></div>
+
+        <!-- Endereço -->
+        <div class="subsection-label">Endereço</div>
+        <div class="form-grid">
+          <div class="field span-2">
+            <label for="resp-logradouro">Logradouro <span class="required">*</span> <span class="hint">(rua, avenida, travessa…)</span></label>
+            <input type="text" id="resp-logradouro" placeholder="Ex: Rua das Flores" autocomplete="street-address" />
+          </div>
+          <div class="field">
+            <label for="resp-numero">Número <span class="required">*</span></label>
+            <input type="text" id="resp-numero" placeholder="Ex: 142" />
+          </div>
+          <div class="field">
+            <label for="resp-complemento">Complemento <span class="hint">(opcional)</span></label>
+            <input type="text" id="resp-complemento" placeholder="Apto, bloco, sala…" />
+          </div>
+          <div class="field">
+            <label for="resp-bairro">Bairro <span class="required">*</span></label>
+            <input type="text" id="resp-bairro" placeholder="Ex: Centro" />
+          </div>
+          <div class="field">
+            <label for="resp-cep">CEP <span class="required">*</span></label>
+            <input type="text" id="resp-cep" placeholder="00000-000" maxlength="9" />
+          </div>
+          <div class="field">
+            <label for="resp-cidade">Cidade <span class="required">*</span></label>
+            <input type="text" id="resp-cidade" placeholder="Ex: São Paulo" autocomplete="address-level2" />
+          </div>
+          <div class="field">
+            <label for="resp-estado">Estado <span class="required">*</span></label>
+            <select id="resp-estado">
+              <option value="" disabled selected>Selecione</option>
+              <option>AC</option><option>AL</option><option>AP</option><option>AM</option>
+              <option>BA</option><option>CE</option><option>DF</option><option>ES</option>
+              <option>GO</option><option>MA</option><option>MT</option><option>MS</option>
+              <option>MG</option><option>PA</option><option>PB</option><option>PR</option>
+              <option>PE</option><option>PI</option><option>RJ</option><option>RN</option>
+              <option>RS</option><option>RO</option><option>RR</option><option>SC</option>
+              <option selected>SP</option><option>SE</option><option>TO</option>
+            </select>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ─── SECTION 3: Dados dos Integrantes ────────────────────── -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-header-icon">
+          <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        </div>
+        <div>
+          <h2>Dados dos Integrantes</h2>
+          <p>Preencha os dados de cada membro do grupo</p>
+        </div>
+      </div>
+      <div class="card-body" id="members-container">
+        <div class="members-placeholder">
+          <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+          </svg>
+          <p>Selecione o número de integrantes acima para exibir os formulários</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── Submit Button Row ────────────────────────────────────── -->
+    <div class="btn-row" style="border-top: none; padding-top: 0;">
+      <button type="button" class="btn btn-outline">
+        <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+        Voltar
+      </button>
+      <button type="button" class="btn btn-primary btn-large" id="btn-confirmar" onclick="confirmarAgendamento()">
+        Confirmar Agendamento
+        <svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+      </button>
+    </div>
+
+  </main>
+
+  <script src="agendamento.js"></script>
+</body>
+</html>
