@@ -16,11 +16,9 @@
     .row{margin-bottom:14px}
     button{width:100%;padding:11px;border:0;border-radius:8px;background:var(--accent);color:#fff;font-weight:600;cursor:pointer}
     button:disabled{opacity:.6;cursor:not-allowed}
-    .info{font-size:13px;color:var(--muted);margin-top:12px;text-align:center}
-    .error{color:var(--danger);font-size:13px;margin-top:10px;text-align:center}
-    .small{font-size:12px;color:#94a3b8;margin-top:8px;text-align:center}
-    .creds{margin-top:14px;background:#f1f5f9;padding:10px;border-radius:8px;color:#0f172a;font-size:13px}
+    .error{color:var(--danger);font-size:13px;margin-top:10px;text-align:center;display:none}
     .success{color:green;font-size:13px;margin-top:10px;text-align:center;display:none}
+    .creds{margin-top:14px;background:#f1f5f9;padding:10px;border-radius:8px;color:#0f172a;font-size:13px}
   </style>
 </head>
 <body>
@@ -31,7 +29,7 @@
     <form id="loginForm" autocomplete="off" novalidate>
       <div class="row">
         <label for="username">Usuário</label>
-        <input id="username" name="username" type="text" inputmode="text" autocomplete="username" required />
+        <input id="username" name="username" type="text" autocomplete="username" required />
       </div>
 
       <div class="row">
@@ -43,10 +41,9 @@
         <button id="btnLogin" type="submit">Entrar</button>
       </div>
 
-      <div id="error" class="error" role="status" aria-live="polite" style="display:none"></div>
+      <div id="error" class="error" role="status" aria-live="polite"></div>
       <div id="success" class="success" role="status" aria-live="polite">Autenticado com sucesso.</div>
 
-      <div class="small">Credenciais válidas (teste)</div>
       <div class="creds">
         admin / admin<br/>
         operador / operador
@@ -56,14 +53,10 @@
 
   <script>
     (function () {
-      // credenciais válidas (apenas client-side para demo)
       const VALID = { admin: 'admin', operador: 'operador' };
+      const MAX_ATTEMPTS = 5;
+      const BLOCK_SECONDS = 10;
 
-      // proteção contra força bruta (configurável)
-      const MAX_ATTEMPTS = 5;          // número máximo de tentativas falhas antes do bloqueio
-      const BLOCK_SECONDS = 10;       // tempo de bloqueio em segundos
-
-      // keys no localStorage usadas para controle
       function attemptsKey(user){ return `login_attempts:${user}`; }
       function blockKey(user){ return `login_block:${user}`; }
 
@@ -74,136 +67,58 @@
       const successEl = document.getElementById('success');
       const btn = document.getElementById('btnLogin');
 
-      function showError(msg){
-        errEl.textContent = msg;
-        errEl.style.display = msg ? 'block' : 'none';
-      }
-      function showSuccess(msg){
-        successEl.textContent = msg;
-        successEl.style.display = msg ? 'block' : 'none';
-      }
+      function showError(msg){ errEl.textContent = msg; errEl.style.display = msg ? 'block' : 'none'; }
+      function showSuccess(msg){ successEl.textContent = msg; successEl.style.display = msg ? 'block' : 'none'; }
 
-      function getNow(){ return Date.now(); }
+      function now(){ return Date.now(); }
+      function getBlockUntil(user){ const v = localStorage.getItem(blockKey(user)); return v ? Number(v) : 0; }
+      function setBlock(user, s){ localStorage.setItem(blockKey(user), String(now() + s*1000)); }
+      function clearBlock(user){ localStorage.removeItem(blockKey(user)); }
+      function getAttempts(user){ const v = localStorage.getItem(attemptsKey(user)); if(!v) return {count:0,firstTs:0}; try{return JSON.parse(v);}catch{return {count:0,firstTs:0}} }
+      function setAttempts(user,o){ localStorage.setItem(attemptsKey(user), JSON.stringify(o)); }
+      function resetAttempts(user){ localStorage.removeItem(attemptsKey(user)); }
+      function registerFailed(user){ const a=getAttempts(user); a.count=(a.count||0)+1; a.firstTs=a.firstTs||now(); setAttempts(user,a); return a.count; }
+      function remaining(user){ const r=Math.ceil((getBlockUntil(user)-now())/1000); return r>0?r:0; }
+      function setAuth(u){ localStorage.setItem('auth_user', u); localStorage.setItem('auth_time', String(now())); }
 
-      function getBlockUntil(user){
-        const v = localStorage.getItem(blockKey(user));
-        if (!v) return 0;
-        const t = Number(v) || 0;
-        return t;
-      }
-
-      function setBlock(user, seconds){
-        const until = getNow() + (seconds * 1000);
-        localStorage.setItem(blockKey(user), String(until));
-      }
-
-      function clearBlock(user){
-        localStorage.removeItem(blockKey(user));
-      }
-
-      function getAttempts(user){
-        const v = localStorage.getItem(attemptsKey(user));
-        if (!v) return { count: 0, firstTs: 0 };
-        try { return JSON.parse(v); } catch { return { count:0, firstTs:0 }; }
-      }
-
-      function setAttempts(user, attemptsObj){
-        localStorage.setItem(attemptsKey(user), JSON.stringify(attemptsObj));
-      }
-
-      function resetAttempts(user){
-        localStorage.removeItem(attemptsKey(user));
-      }
-
-      function registerFailedAttempt(user){
-        const now = getNow();
-        const a = getAttempts(user);
-        a.count = (a.count || 0) + 1;
-        a.firstTs = a.firstTs || now;
-        setAttempts(user, a);
-        return a.count;
-      }
-
-      function remainingBlockSeconds(user){
-        const until = getBlockUntil(user);
-        const rem = Math.ceil((until - getNow())/1000);
-        return rem > 0 ? rem : 0;
-      }
-
-      function setAuth(username){
-        localStorage.setItem('auth_user', username);
-        localStorage.setItem('auth_time', String(Date.now()));
-      }
-
-      function isBlocked(user){
-        const until = getBlockUntil(user);
-        return until > getNow();
-      }
+      function isBlocked(user){ return getBlockUntil(user) > now(); }
 
       function applyBlockUI(user){
-        const rem = remainingBlockSeconds(user);
-        showError(`Conta bloqueada por tentativas excessivas. Tente novamente em ${rem} s.`);
         btn.disabled = true;
-        const iv = setInterval(() => {
-          const r = remainingBlockSeconds(user);
-          if (r <= 0) {
-            clearInterval(iv);
-            clearBlock(user);
-            resetAttempts(user);
-            showError('');
-            btn.disabled = false;
-          } else {
-            showError(`Conta bloqueada por tentativas excessivas. Tente novamente em ${r} s.`);
-          }
+        const iv = setInterval(()=>{
+          const r = remaining(user);
+          if (r<=0){ clearInterval(iv); clearBlock(user); resetAttempts(user); btn.disabled=false; showError(''); }
+          else showError(`Conta bloqueada. Tente novamente em ${r} s.`);
         }, 500);
       }
 
-      form.addEventListener('submit', function (e) {
+      form.addEventListener('submit', function(e){
         e.preventDefault();
-        showError('');
-        showSuccess('');
-        const u = (userEl.value || '').trim();
-        const p = (passEl.value || '').trim();
+        showError(''); showSuccess('');
+        const u = (userEl.value||'').trim(), p = (passEl.value||'').trim();
+        if(!u||!p){ showError('Preencha usuário e senha.'); return; }
+        if(isBlocked(u)){ applyBlockUI(u); return; }
 
-        if (!u || !p) {
-          showError('Preencha usuário e senha.');
-          return;
-        }
-
-        if (isBlocked(u)) {
-          applyBlockUI(u);
-          return;
-        }
-
-        if (VALID[u] && VALID[u] === p) {
-          resetAttempts(u);
-          clearBlock(u);
-          setAuth(u);
-          showSuccess('Autenticado com sucesso.');
-
-          // redireciona apenas quando for admin
+        if(VALID[u] && VALID[u] === p){
+          resetAttempts(u); clearBlock(u); setAuth(u); showSuccess('Autenticado com sucesso.');
           if (u === 'admin') {
-            // redireciona para o dashboard rodando em localhost:3000
             window.location.href = 'http://localhost:3000/dashboard.html';
+          } else if (u === 'operador') {
+            window.location.href = 'http://localhost:3000/dashboardoperador.html';
           }
           return;
         }
 
-        const failCount = registerFailedAttempt(u);
-        const attemptsLeft = Math.max(0, MAX_ATTEMPTS - failCount);
-        if (attemptsLeft <= 0) {
-          setBlock(u, BLOCK_SECONDS);
-          applyBlockUI(u);
-        } else {
-          showError(`Usuário ou senha inválidos. Restam ${attemptsLeft} tentativa(s).`);
-        }
-        passEl.value = '';
-        passEl.focus();
+        const fails = registerFailed(u);
+        const left = Math.max(0, MAX_ATTEMPTS - fails);
+        if (left <= 0) { setBlock(u, BLOCK_SECONDS); applyBlockUI(u); }
+        else { showError(`Usuário ou senha inválidos. Restam ${left} tentativa(s).`); }
+        passEl.value=''; passEl.focus();
       });
 
-      document.addEventListener('DOMContentLoaded', () => {
-        const currentUser = (userEl.value || '').trim() || 'default';
-        if (isBlocked(currentUser)) applyBlockUI(currentUser);
+      document.addEventListener('DOMContentLoaded', ()=>{
+        const cur = (userEl.value||'').trim() || 'default';
+        if (isBlocked(cur)) applyBlockUI(cur);
       });
     })();
   </script>

@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Dashboard - Operador</title>
+  <style>
+    body{font-family:Inter,Segoe UI,Roboto,Arial,sans-serif;margin:0;background:#f3f6f9;color:#0f172a}
+    header{background:#fff;padding:12px 20px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 2px 8px rgba(15,23,42,0.06)}
+    main{padding:20px;max-width:1100px;margin:18px auto}
+    h1{margin:0;font-size:18px}
+    .muted{color:#64748b;font-size:13px}
+    .btn{background:#2563eb;color:#fff;padding:8px 12px;border-radius:8px;border:0;cursor:pointer}
+    .btn.secondary{background:#94a3b8}
+    table{width:100%;border-collapse:collapse;margin-top:14px;background:#fff;border-radius:8px;overflow:hidden}
+    th,td{padding:10px 12px;border-bottom:1px solid #eef2f6;text-align:left;font-size:14px;vertical-align:middle}
+    th{background:#f8fafc;color:#334155;font-weight:600}
+    tr:last-child td{border-bottom:0}
+    .actions{display:flex;gap:8px;align-items:center}
+    .msg{margin-top:12px;font-size:14px}
+    .danger{color:#e11d48}
+    .ok{color:#059669}
+    .small{font-size:13px;color:#64748b}
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <h1>Dashboard - Operador</h1>
+      <div class="muted" id="userLabel">Usuário: —</div>
+    </div>
+    <div>
+      <button id="btnRefresh" class="btn secondary">Atualizar</button>
+      <button id="btnLogout" class="btn" style="margin-left:8px;background:#ef4444">Logout</button>
+    </div>
+  </header>
+
+  <main>
+    <div id="accessDenied" style="display:none">
+      <p class="danger">Acesso negado. Apenas usuário <strong>operador</strong> pode acessar esta página.</p>
+    </div>
+
+    <div id="content" style="display:none">
+      <div class="small">Marque ou desmarque "Grupo confirmado" e clique em "Salvar" para gravar apenas esse campo.</div>
+      <div id="msg" class="msg"></div>
+
+      <table id="tableUsuarios">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Nome</th>
+            <th>CPF</th>
+            <th>Data Nasc</th>
+            <th>Email</th>
+            <th>Telefone</th>
+            <th>Cidade</th>
+            <th>Estado</th>
+            <th>Grupo confirmado</th>
+            <th style="width:140px">Ações</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </main>
+
+  <script>
+    (function(){
+      const API_BASE = '/api/usuarios'; // ajuste se necessário (ex: 'http://localhost:3000/api/usuarios')
+      const authUser = localStorage.getItem('auth_user') || '';
+      document.getElementById('userLabel').textContent = 'Usuário: ' + (authUser || '—');
+      const accessDenied = document.getElementById('accessDenied');
+      const content = document.getElementById('content');
+      const tableBody = document.querySelector('#tableUsuarios tbody');
+      const msgEl = document.getElementById('msg');
+      const btnRefresh = document.getElementById('btnRefresh');
+      const btnLogout = document.getElementById('btnLogout');
+
+      function showMsg(txt, ok){
+        msgEl.textContent = txt || '';
+        msgEl.className = 'msg ' + (ok ? 'ok' : 'danger');
+        if (txt) setTimeout(()=> msgEl.textContent='', 3000);
+      }
+
+      function requireOperadorOrDeny(){
+        if (authUser !== 'operador') {
+          accessDenied.style.display = 'block';
+          content.style.display = 'none';
+          return false;
+        }
+        accessDenied.style.display = 'none';
+        content.style.display = 'block';
+        return true;
+      }
+
+      function makeRow(u){
+        const tr = document.createElement('tr');
+        tr.dataset.id = u.id;
+
+        const td = (v) => { const t = document.createElement('td'); t.textContent = v ?? ''; return t; };
+
+        tr.appendChild(td(u.id));
+        tr.appendChild(td(u.nome));
+        tr.appendChild(td(u.cpf));
+        tr.appendChild(td(u.dataDeNascimento));
+        tr.appendChild(td(u.email));
+        tr.appendChild(td(u.telefone));
+        tr.appendChild(td(u.cidade));
+        tr.appendChild(td(u.estado));
+
+        // checkbox apenas para confirmar o grupo
+        const tdChk = document.createElement('td');
+        const chk = document.createElement('input');
+        chk.type = 'checkbox';
+        chk.checked = Boolean(u.grupoConfirmado);
+        tdChk.appendChild(chk);
+        tr.appendChild(tdChk);
+
+        // ações: salvar checkbox ou recarregar
+        const tdAct = document.createElement('td');
+        tdAct.className = 'actions';
+        const btnSave = document.createElement('button');
+        btnSave.textContent = 'Salvar';
+        btnSave.className = 'btn';
+        btnSave.addEventListener('click', ()=> saveConfirm(u.id, chk, btnSave));
+        const btnReload = document.createElement('button');
+        btnReload.textContent = 'Recarregar';
+        btnReload.className = 'btn secondary';
+        btnReload.addEventListener('click', loadUsuarios);
+        tdAct.appendChild(btnSave);
+        tdAct.appendChild(btnReload);
+        tr.appendChild(tdAct);
+
+        return tr;
+      }
+
+      async function loadUsuarios(){
+        if (!requireOperadorOrDeny()) return;
+        tableBody.innerHTML = '<tr><td colspan="10">Carregando...</td></tr>';
+        try {
+          const r = await fetch(API_BASE);
+          if (!r.ok) throw new Error('Status ' + r.status);
+          const data = await r.json();
+          tableBody.innerHTML = '';
+          if (!Array.isArray(data) || data.length === 0) {
+            tableBody.innerHTML = '<tr><td colspan="10">Nenhum agendamento encontrado.</td></tr>';
+            return;
+          }
+          data.forEach(u => tableBody.appendChild(makeRow(u)));
+        } catch (err) {
+          tableBody.innerHTML = '<tr><td colspan="10">Erro ao carregar dados.</td></tr>';
+          showMsg('Erro: ' + (err.message||err), false);
+          console.error(err);
+        }
+      }
+
+      async function saveConfirm(id, checkboxEl, btn){
+        btn.disabled = true;
+        btn.textContent = 'Salvando...';
+        const payload = { grupoConfirmado: Boolean(checkboxEl.checked) };
+        try {
+          const url = API_BASE.endsWith('/') ? API_BASE + id : API_BASE + '/' + id;
+          const resp = await fetch(url, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+          if (!resp.ok) {
+            const body = await resp.json().catch(()=> ({}));
+            throw new Error(body.message || ('Status ' + resp.status));
+          }
+          showMsg('Confirmação salva.', true);
+        } catch (err) {
+          showMsg('Erro ao salvar: ' + (err.message||''), false);
+          console.error(err);
+        } finally {
+          btn.disabled = false;
+          btn.textContent = 'Salvar';
+        }
+      }
+
+      btnRefresh.addEventListener('click', loadUsuarios);
+      btnLogout.addEventListener('click', () => {
+        localStorage.removeItem('auth_user');
+        localStorage.removeItem('auth_time');
+        window.location.href = 'login.html';
+      });
+
+      if (!requireOperadorOrDeny()) return;
+      loadUsuarios();
+    })();
+  </script>
+</body>
+</html>
