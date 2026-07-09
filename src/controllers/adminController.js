@@ -1,7 +1,7 @@
-let usuarios = []; // armazenamento em memória
+let usuarios = []; 
 let nextId = 1;
 
-// Normaliza/valida payload mínimo (pode estender conforme necessário)
+
 function buildUsuarioFromBody(body) {
   return {
     id: body.id || null,
@@ -33,7 +33,6 @@ exports.createUsuario = (req, res) => {
     const body = req.body || {};
     const usuario = buildUsuarioFromBody(body);
     usuario.id = nextId++;
-    // atribuir ids aos integrantes (opcional)
     usuario.integrantes = usuario.integrantes.map((m, i) => ({ ...m, id: `${usuario.id}-${i+1}` }));
 
     usuarios.push(usuario);

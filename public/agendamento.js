@@ -1,8 +1,8 @@
-// agendamento.js
+
 
 const CHECKMARK = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
 
-/* ---------- MÁSCARAS E AUXILIARES ---------- */
+
 
 function maskCPF(v) {
   return v.replace(/\D/g, '')
@@ -31,7 +31,6 @@ function onlyNumbers(e) {
   if (!/^\d$/.test(e.key)) e.preventDefault();
 }
 
-/* ---------- ERROS / VALIDAÇÃO VISUAL ---------- */
 
 function showError(input, msg) {
   if (!input) return;
@@ -60,7 +59,7 @@ function markValid(input) {
   if (input.value.trim() !== '') input.classList.add('is-valid');
 }
 
-/* ---------- REGRAS ---------- */
+
 
 const RULES = {
   cpf: {
@@ -136,7 +135,7 @@ function attachRule(input, ruleKey) {
   input.addEventListener('focus', () => clearError(input));
 }
 
-/* ---------- BARRA DE STEPS ---------- */
+
 
 function setStep(n, state) {
   const item   = document.getElementById('step-' + n);
@@ -154,7 +153,7 @@ function setStep(n, state) {
   }
 }
 
-/* ---------- SIZE SELECT E MEMBROS DINÂMICOS ---------- */
+
 
 function selectSize(btn, n) {
   document.querySelectorAll('.size-btn').forEach(b => b.classList.remove('selected'));
@@ -228,7 +227,7 @@ function showMembersPlaceholder() {
   `;
 }
 
-/* ---------- CHECK STEPS ---------- */
+
 
 const RESP_REQUIRED = [
   'resp-nome', 'resp-cpf', 'resp-nascimento',
@@ -283,11 +282,7 @@ function checkStep3() {
   }
 }
 
-/* ---------- ENVIO / PAYLOAD ---------- */
 
-// Ajuste aqui para apontar ao backend correto.
-// Se seu backend roda em http://localhost:3000, mantenha essa URL.
-// Se backend estiver na mesma origem do frontend, você pode voltar para '/api/usuarios'.
 const BACKEND_URL = '/api/usuarios';
 
 async function confirmarAgendamento(event) {
@@ -328,7 +323,7 @@ async function confirmarAgendamento(event) {
     };
   }).filter(m => m.nome || m.cpf || m.email);
 
-  // validações finais simples
+
   const respErr = RESP_REQUIRED.map(id => document.getElementById(id)).find(el => !el || el.value.trim() === '' || el.classList.contains('is-error'));
   if (respErr) {
     alert('Preencha corretamente os dados do responsável antes de confirmar.');
@@ -386,7 +381,7 @@ function clearForm() {
   showMembersPlaceholder();
 }
 
-/* ---------- INICIALIZAÇÃO ---------- */
+
 
 document.addEventListener('DOMContentLoaded', () => {
   attachRule(document.getElementById('resp-cpf'), 'cpf');

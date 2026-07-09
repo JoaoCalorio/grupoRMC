@@ -95,7 +95,7 @@
       }
 
       function buildRow(u){
-        // columns editable: nome, cpf, dataDeNascimento, email, telefone, cidade, estado
+
         const tr = document.createElement('tr');
         tr.dataset.id = u.id;
 
@@ -202,7 +202,6 @@
         window.location.href = 'login.html';
       });
 
-      // inicialização
       if (!requireAdminOrDeny()) return;
       loadUsuarios();
     })();
