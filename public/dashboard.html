@@ -1,0 +1,211 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Dashboard - Agendamentos</title>
+  <style>
+    body{font-family:Inter,Segoe UI,Roboto,Arial,sans-serif;margin:0;background:#f3f6f9;color:#0f172a}
+    header{background:#fff;padding:12px 20px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 2px 8px rgba(15,23,42,0.06)}
+    main{padding:20px;max-width:1100px;margin:18px auto}
+    h1{margin:0;font-size:18px}
+    .muted{color:#64748b;font-size:13px}
+    .btn{background:#2563eb;color:#fff;padding:8px 12px;border-radius:8px;border:0;cursor:pointer}
+    .btn.secondary{background:#94a3b8}
+    table{width:100%;border-collapse:collapse;margin-top:14px;background:#fff;border-radius:8px;overflow:hidden}
+    th,td{padding:10px 12px;border-bottom:1px solid #eef2f6;text-align:left;font-size:14px}
+    th{background:#f8fafc;color:#334155;font-weight:600}
+    tr:last-child td{border-bottom:0}
+    input[type="text"],input[type="email"]{width:100%;padding:6px 8px;border:1px solid #e6edf3;border-radius:6px}
+    .actions{display:flex;gap:8px}
+    .msg{margin-top:12px;font-size:14px}
+    .danger{color:#e11d48}
+    .ok{color:#059669}
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <h1>Dashboard de Agendamentos</h1>
+      <div class="muted" id="userLabel">Usuário: —</div>
+    </div>
+    <div>
+      <button id="btnRefresh" class="btn secondary">Atualizar</button>
+      <button id="btnLogout" class="btn">Logout</button>
+    </div>
+  </header>
+
+  <main>
+    <div id="accessDenied" style="display:none">
+      <p class="danger">Acesso negado. Apenas usuário <strong>admin</strong> pode acessar esta página.</p>
+      <p class="muted">Faça login como admin em <code>login.html</code>.</p>
+    </div>
+
+    <div id="content" style="display:none">
+      <div class="muted">Clique em "Editar" para alterar campos e "Salvar" para enviar ao servidor.</div>
+      <div id="msg" class="msg"></div>
+
+      <table id="tableUsuarios">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Nome</th>
+            <th>CPF</th>
+            <th>Data Nasc</th>
+            <th>Email</th>
+            <th>Telefone</th>
+            <th>Cidade/Estado</th>
+            <th style="width:170px">Ações</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </main>
+
+  <script>
+    (function(){
+      const API_BASE = '/api/usuarios'; // ajuste se necessário
+      const authUser = localStorage.getItem('auth_user') || '';
+      const userLabel = document.getElementById('userLabel');
+      const accessDenied = document.getElementById('accessDenied');
+      const content = document.getElementById('content');
+      const tableBody = document.querySelector('#tableUsuarios tbody');
+      const msgEl = document.getElementById('msg');
+      const btnRefresh = document.getElementById('btnRefresh');
+      const btnLogout = document.getElementById('btnLogout');
+
+      userLabel.textContent = 'Usuário: ' + (authUser || '—');
+
+      function showMsg(txt, ok){
+        msgEl.textContent = txt || '';
+        msgEl.className = 'msg ' + (ok ? 'ok' : 'danger');
+        if (txt) setTimeout(()=>{ msgEl.textContent=''; }, 4000);
+      }
+
+      function requireAdminOrDeny(){
+        if (authUser !== 'admin') {
+          accessDenied.style.display = 'block';
+          content.style.display = 'none';
+          return false;
+        }
+        accessDenied.style.display = 'none';
+        content.style.display = 'block';
+        return true;
+      }
+
+      function buildRow(u){
+        // columns editable: nome, cpf, dataDeNascimento, email, telefone, cidade, estado
+        const tr = document.createElement('tr');
+        tr.dataset.id = u.id;
+
+        function tdInput(value, cls){
+          const td = document.createElement('td');
+          const input = document.createElement('input');
+          input.type = 'text';
+          input.value = value ?? '';
+          if (cls) input.className = cls;
+          td.appendChild(input);
+          return td;
+        }
+
+        tr.appendChild((() => { const td = document.createElement('td'); td.textContent = u.id; return td; })());
+        tr.appendChild(tdInput(u.nome, 'inp-nome'));
+        tr.appendChild(tdInput(u.cpf, 'inp-cpf'));
+        tr.appendChild(tdInput(u.dataDeNascimento, 'inp-nasc'));
+        tr.appendChild(tdInput(u.email, 'inp-email'));
+        tr.appendChild(tdInput(u.telefone, 'inp-tel'));
+        tr.appendChild((() => { const td = document.createElement('td'); td.style.minWidth='140px';
+          const c = document.createElement('div'); c.style.display='flex'; c.style.gap='6px';
+          const inCidade = document.createElement('input'); inCidade.type='text'; inCidade.value = u.cidade || ''; inCidade.className='inp-cidade';
+          const inEstado = document.createElement('input'); inEstado.type='text'; inEstado.value = u.estado || ''; inEstado.className='inp-estado'; inEstado.style.width='60px';
+          c.appendChild(inCidade); c.appendChild(inEstado); td.appendChild(c); return td;
+        })());
+
+        // actions
+        const tdActions = document.createElement('td');
+        tdActions.className = 'actions';
+        const btnEdit = document.createElement('button');
+        btnEdit.textContent = 'Salvar';
+        btnEdit.className = 'btn';
+        btnEdit.addEventListener('click', () => saveRow(tr));
+        const btnRefreshRow = document.createElement('button');
+        btnRefreshRow.textContent = 'Recarregar';
+        btnRefreshRow.className = 'btn secondary';
+        btnRefreshRow.addEventListener('click', () => loadUsuarios()); // simple: reload all
+        tdActions.appendChild(btnEdit);
+        tdActions.appendChild(btnRefreshRow);
+        tr.appendChild(tdActions);
+
+        return tr;
+      }
+
+      async function loadUsuarios(){
+        if (!requireAdminOrDeny()) return;
+        tableBody.innerHTML = '<tr><td colspan="8">Carregando...</td></tr>';
+        try {
+          const r = await fetch(API_BASE);
+          if (!r.ok) throw new Error('Erro ao carregar: ' + r.status);
+          const data = await r.json();
+          tableBody.innerHTML = '';
+          if (!Array.isArray(data) || data.length === 0) {
+            tableBody.innerHTML = '<tr><td colspan="8">Nenhum agendamento encontrado.</td></tr>';
+            return;
+          }
+          data.forEach(u => tableBody.appendChild(buildRow(u)));
+        } catch (err) {
+          tableBody.innerHTML = '<tr><td colspan="8">Erro ao carregar dados.</td></tr>';
+          showMsg(err.message || 'Erro', false);
+          console.error(err);
+        }
+      }
+
+      async function saveRow(tr){
+        const id = tr.dataset.id;
+        const payload = {
+          nome: tr.querySelector('.inp-nome')?.value || '',
+          cpf: tr.querySelector('.inp-cpf')?.value || '',
+          dataDeNascimento: tr.querySelector('.inp-nasc')?.value || '',
+          email: tr.querySelector('.inp-email')?.value || '',
+          telefone: tr.querySelector('.inp-tel')?.value || '',
+          cidade: tr.querySelector('.inp-cidade')?.value || '',
+          estado: tr.querySelector('.inp-estado')?.value || ''
+        };
+        const btn = tr.querySelector('button.btn');
+        btn.disabled = true;
+        btn.textContent = 'Salvando...';
+        try {
+          const url = API_BASE.endsWith('/') ? API_BASE + id : API_BASE + '/' + id;
+          const resp = await fetch(url, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+          if (!resp.ok) {
+            const body = await resp.json().catch(()=> ({}));
+            throw new Error(body.message || ('Erro ' + resp.status));
+          }
+          showMsg('Salvo com sucesso.', true);
+        } catch (err) {
+          showMsg('Erro ao salvar: ' + (err.message||''), false);
+          console.error(err);
+        } finally {
+          btn.disabled = false;
+          btn.textContent = 'Salvar';
+        }
+      }
+
+      btnRefresh.addEventListener('click', loadUsuarios);
+      btnLogout.addEventListener('click', () => {
+        localStorage.removeItem('auth_user');
+        localStorage.removeItem('auth_time');
+        window.location.href = 'login.html';
+      });
+
+      // inicialização
+      if (!requireAdminOrDeny()) return;
+      loadUsuarios();
+    })();
+  </script>
+</body>
+</html>
